@@ -18,7 +18,7 @@ let playerCenter; //location vector
 let playerObj; //physics object
 
 //Physics Variables
-let Engine, Runner, Bodies, Composite;
+let Engine, Render, Runner, Bodies, Composite;
 
 let FrameCounter = 0;
 
@@ -90,15 +90,15 @@ let wKeyPressed = false;
 document.addEventListener('keydown', function(event) {
     switch(event.key){
         case 'a':
-            playerObj.force.x = -.001;
+            playerObj.force.x = -.01;
             break;
 
         case 'd':
-            playerObj.force.x = .001;
+            playerObj.force.x = .01;
             break;
 
         case 'w':
-            playerObj.force.y = -.002;
+            playerObj.force.y = -.01;
             break;
     }
 });
@@ -106,15 +106,12 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('keyup', function(event) {
     switch(event.key){
         case 'a':
-            aKeyPressed = false;
             playerObj.force.x = 0;
             break;
         case 'd':
-            dKeyPressed = false;
             playerObj.force.x = 0;
             break;
         case 'w':
-            wKeyPressed = false;
             playerObj.force.y = 0;
             break;
     }
@@ -167,7 +164,7 @@ function loop()
         FrameCounter = 0;
     }
     
-    //console.log(playerObj.force);
+    console.log(playerObj.velocity);
     FrameCounter++;
 
     //console.log(FrameCounter);
@@ -176,6 +173,7 @@ function loop()
 function initPhysics(playerCenter)
 {
     Engine = Matter.Engine;
+    Render = Matter.Render;
     Runner = Matter.Runner;
     Bodies = Matter.Bodies;
     Composite = Matter.Composite;
@@ -183,19 +181,28 @@ function initPhysics(playerCenter)
     // create an engine
     let engine = Engine.create();
 
+    //let render = Render.create({
+    //    element: document.body,
+    //    engine: engine
+    //});
+
     // create two boxes and a ground
-    playerObj = Bodies.rectangle(playerCenter.x, playerCenter.y, 8, 8);
+    playerObj = Bodies.rectangle(playerCenter.x, playerCenter.y, 16, 16);
+    playerObj.friction = 0;
     console.log(playerObj);
 
     let ground = Bodies.rectangle(screenWidth/2, screenHeight - 30, screenWidth, 60, { isStatic: true });
 
-    let wall1 = Bodies.rectangle(screenWidth - 30, screenHeight, 60, screenHeight, { isStatic: true });
-    let wall2 = Bodies.rectangle(0, screenHeight, 60, screenHeight, { isStatic: true });
+    let wall1 = Bodies.rectangle(screenWidth - 30, screenHeight/2, 60, screenHeight, { isStatic: true });
+    let wall2 = Bodies.rectangle(0, screenHeight/2, 60, screenHeight, { isStatic: true });
 
     let ceiling = Bodies.rectangle(screenWidth/2, 0, screenWidth, 60, { isStatic: true });
 
     // add all of the bodies to the world
     Composite.add(engine.world, [playerObj, ground, wall1, wall2, ceiling]);
+
+    // run the renderer
+    //Render.run(render);
 
     // create runner
     let runner = Runner.create();
@@ -206,6 +213,26 @@ function initPhysics(playerCenter)
 
 function updatePlayerAnimation(playerObj)
 {
+
+    if(playerObj.velocity.x > 2)
+    {
+        currentPlayerAnimation = playerMoveRight;
+        return;
+    }
+
+    if(playerObj.velocity.x < -2)
+    {
+        currentPlayerAnimation = playerMoveLeft;
+        return;
+    }
+
+    //player is idle when: completely stationary and not preparing to jump or land
+    if(playerObj.speed < 2)
+    {
+       currentPlayerAnimation = playerIdle; 
+       return;
+    }
+
     //player is falling when: velocity.y is bigger than 0 and moving at a total speed faster than 1
     if(playerObj.velocity.y > 0 && playerObj.speed > 1)
     {
@@ -228,38 +255,12 @@ function updatePlayerAnimation(playerObj)
     }
 
 
-    //player is preparing to jump when:
-    if((currentPlayerAnimation == playerIdle || currentPlayerAnimation == playerMoveRight || currentPlayerAnimation == playerMoveLeft) && playerObj.force.y > 0)
-    {
-        currentPlayerAnimation = playerJumpPrep;
-        return;   
-    }
-
     //player is jumping when:
-    if(currentPlayerAnimation == playerJumpPrep && currentAnimationFrame != 5) 
+    if(playerObj.velocity.y < 0 && playerObj.speed > 1)
     {
         currentPlayerAnimation = playerJump;
         return;
     }
 
-    if(playerObj.velocity.y < 0 && playerObj.speed > 1 && currentPlayerAnimation != playerJump)
-    {
-        currentPlayerAnimation = playerJump;
-        return;
-    }
-
-    //player is idle when: completely stationary and not preparing to jump or land
-    if(playerObj.speed < 1 && (currentPlayerAnimation != playerLand || currentPlayerAnimation != playerJumpPrep))
-    {
-        currentPlayerAnimation = playerIdle; 
-        return;
-    }
+ 
 }
-
-function updateAnimationFrame()
-{
-    currentAnimationFrame = (currentAnimationFrame+1) % currentPlayerAnimation.length;
-}
-
-// module aliases
-
