@@ -132,7 +132,6 @@ function init(imgData)
     initPhysics(playerCenter);
     
     loop();
-    checkPhysics();
 }
 
 function loop()
