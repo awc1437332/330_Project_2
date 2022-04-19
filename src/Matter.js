@@ -1,3 +1,4 @@
+"use strict";
 /*!
  * matter-js 0.18.0 by @liabru
  * http://brm.io/matter-js/
