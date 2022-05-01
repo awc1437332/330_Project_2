@@ -13,18 +13,21 @@
         integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="styles/styles.css" type="text/css" rel="stylesheet" />
-    <script src="./src/loader.js" type="module"></script>
-    <script src="./src/Matter.js"></script>
+    <script src="src/loader.js" type="module"></script>
+    <script src="src/Matter.js"></script>
     <title>App</title>
 </head>
 
 <body>
+    <my-header></my-header>
     <h1 id="player-stats"></h1>
     <div id="game">
         <canvas width="1024" height="512"></canvas>
     </div>
     <h1 id="flavor-text"></h1>
     <h2 id="instructions" class="subtitle">Instructions: W to jump, A and D to move</h2>
+
+    <my-footer></my-footer>
 </body>
 
 </html>
