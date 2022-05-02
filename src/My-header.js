@@ -12,6 +12,10 @@ template.innerHTML = `
         font-family: 'Press Start 2P', cursive;
         font-size: 36px;
     }
+
+    .active{
+        font-weight: bold;
+    }
 </style>
 
 <header>
@@ -30,7 +34,7 @@ template.innerHTML = `
 
         <div class="navbar-menu" id="nav-links">
             <a href="about.html" class="navbar-item">About</a>
-            <a href="app.html" class="navbar-item">Apps</a>
+            <a href="app.html" class="navbar-item">App</a>
             <a href="documentation.html" class="navbar-item">Documentation</a>
         </div>
     </nav>
@@ -52,6 +56,8 @@ class MyHeader extends HTMLElement {
         // mobile menu
         this.burgerIcon = this.shadowRoot.querySelector("#burger");
         this.navbarMenu = this.shadowRoot.querySelector("#nav-links");
+
+        this.activePage = this.getAttribute("active-page");
     }
 
     /**
@@ -61,6 +67,8 @@ class MyHeader extends HTMLElement {
         this.burgerIcon.addEventListener('click', () => {
             this.navbarMenu.classList.toggle('is-active');
         })
+
+        this.render();
     }
 
     /**
@@ -71,6 +79,23 @@ class MyHeader extends HTMLElement {
             this.navbarMenu.classList.toggle('is-not-active');
         })
     }
+
+    render() {
+        let aTags = this.shadowRoot.querySelectorAll("a");
+        switch(this.activePage)
+        {
+            case "about":
+                aTags[2].classList.add("is-size-5");
+                break;
+            case "app":
+                aTags[3].classList.add("is-size-5");
+                break;
+            case "documentation":
+                aTags[4].classList.add("is-size-5");
+                break;
+        }
+    }
+    
 
 } // end class
 
