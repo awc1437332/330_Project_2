@@ -10,9 +10,15 @@ const screenHeight = canvas.height;
 const text = document.querySelector("#flavor-text");
 const stats = document.querySelector("#player-stats");
 
+const clearBtn = document.querySelector("#clear-btn");
+const musicToggle = document.querySelector("#music-enabled");
+const volumeSlide = document.querySelector("#volume-slider");
+
 let currentLevel = 1;
 //#region Variables
 let stillLooping = false;
+
+let musicEnabled = true;
 
 //Player Data
 let playerImage;
@@ -135,7 +141,6 @@ let topInputPressed = false;
 //#endregion
 
 //#region Functions
-
 //Parse level JSON data using fetch
 function fetchData()
 {
@@ -163,6 +168,7 @@ function fetchData()
 function init(imgData)
 {
     //localStorage.clear();
+    
 
     //Fetch only if data is not set
     if(!JSONData)
@@ -258,14 +264,15 @@ function init(imgData)
     //});
 
     //Setup UI
-    if(stats){
-        stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
-        //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
+    if(text){
+        text.innerHTML = `Total Crowns Collected: ${localData.numCrowns}<br>`;
     }
 
-    if(text){
-        text.innerHTML = `Welcome to the game! Press the 'Enter' Key to begin!`
+    if(stats){
+        stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames}`;
     }
+
+    setupOptions();
 }
 
 //game loop
@@ -307,7 +314,10 @@ function loop()
                 localData.numCrowns++; //number of crowns collected total
                 localStorage.setItem(playerKey, JSON.stringify(localData));
 
-                pickupSFX.play();
+                if(musicEnabled)
+                {
+                    pickupSFX.play();
+                }
                 //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
                 Composite.remove(engine.world, crowns[i]);
                 crowns.splice(i, 1);
@@ -318,7 +328,10 @@ function loop()
 
     if(Collision.collides(playerObj, doorObj)){
         //only move to next level if there is a next level to move to
-        nextLevelSFX.play();
+        if(musicEnabled)
+        {
+            nextLevelSFX.play();
+        }
         if (currentLevel < 10){
             currentLevel++;
             setupLevel(currentLevel);
@@ -347,8 +360,8 @@ function loop()
         hCounter++;
         minCounter = 0;        
     }
+    text.innerHTML = `Level ${currentLevel}: "${JSONData.levels[currentLevel - 1].title}"<br>Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}<br>`;
     stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
-    text.innerHTML = `Level ${currentLevel}: ${JSONData.levels[currentLevel - 1].title} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
 
     //For debug purposes
     //Render.lookAt(render, playerObj, {x:100, y:150});
@@ -412,11 +425,15 @@ function setupGame()
     stillLooping = true;
     //initPhysics(playerCenter);
 
-    backgroundMusic.play();
+    if(musicEnabled)
+    {
+        backgroundMusic.play();
+    }
+
     backgroundMusic.loop = true;
 
     //Set initial player sprite
-    if(crownSkinUnlocked)
+    if(localData.skinUnlocked)
     {
         playerSprite = altPlayerSprite;
     }
@@ -425,6 +442,7 @@ function setupGame()
         playerSprite = basePlayerSprite;
     }
 
+    //Event Listeners
     //remove original keypress eventlistener
     document.onkeypress = null;
 
@@ -445,51 +463,16 @@ function setupGame()
             case "ArrowUp":
                 topInputPressed = true;
                 Body.setVelocity(playerObj, {x:playerObj.velocity.x, y:-10});
-                bounceSFX.play();
+                if(musicEnabled)
+                {
+                    if(musicEnabled)
+                    {
+                        bounceSFX.play();
+                    }
+                }
                 break;
         }
     }
-
-    //Add Event Listeners
-    /*document.addEventListener('keypress', function(event) {
-        switch(event.key){
-            case 'a':
-            case "ArrowLeft":
-                leftInputPressed = true;
-                break;
-    
-            case 'd':
-            case "ArrowRight":
-                rightInputPressed = true;
-                break;
-    
-            case 'w': //W is the only key that doesnt require constant key press
-            case "ArrowUp":
-                topInputPressed = true;
-                Body.setVelocity(playerObj, {x:playerObj.velocity.x, y:-10});
-                bounceSFX.play();
-                break;
-        }
-    });*/
-    
-    /*document.addEventListener('keyup', function(event) {
-        switch(event.key){
-            case 'a':
-            case "ArrowLeft":
-                leftInputPressed = false;
-                break;
-    
-            case 'd':
-            case "ArrowRight":
-                rightInputPressed = false;
-                break;
-    
-            case 'w': //W is the only key that doesnt require constant key press
-            case "ArrowUp":
-                topInputPressed = false;
-                break;
-        }
-    });*/
 
     document.onkeyup = (event) => 
     {
@@ -654,8 +637,6 @@ function setupLevel(levelNum)
 
     let levelObj = JSONData.levels[levelNum - 1];
 
-    text.innerHTML = `Level ${levelNum}: ${levelObj.title}`; 
-
     //Move the player to the start position
     Body.setPosition(playerObj, levelObj.playerPosition);
 
@@ -731,15 +712,19 @@ function returnToMainMenu()
     //Check to see if the player has done the special objective
     if(getTotalTime(frameCounter, sCounter, minCounter, hCounter) < 3600 && crownsCollected >= 10)
     {
-        crownSkinUnlocked = true;
-        localData.skinUnlocked = crownSkinUnlocked;
+        localData.skinUnlocked = true;
         localStorage.setItem(playerKey, JSON.stringify(localData));
     }
+
+    text.innerHTML += `Congratulations! Your time was ${hCounter}:${minCounter}:${sCounter}:${frameCounter} and you collected ${crownsCollected}<br>Press 'Enter' to play again!`;
+    stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} `; 
 
     hCounter = 0;
     minCounter = 0;
     sCounter = 0;
     frameCounter = 0;
+
+    crownsCollected = 0;
 
     document.onkeypress = null;
     document.onkeypress = (event) => 
@@ -757,11 +742,9 @@ function returnToMainMenu()
     stillLooping = false;
 
     ctx.drawImage(titleImage, 0, 0);
-    stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
-    //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
-    text.innerHTML = `Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}\n`;
-    text.innerHTML += `Congratulations! Your time was ${hCounter}:${minCounter}:${sCounter}:${frameCounter}. Press 'Enter' to play again!`;
+   
 }
+
 
 function updateBestTime()
 {
@@ -790,3 +773,40 @@ function getTotalTime(frames, seconds, minutes, hours)
 }
 
 //#endregion
+
+//Options
+
+
+function setupOptions()
+{
+    //add a user input for clearing local storage manually
+    if(clearBtn)
+    {
+        clearBtn.onclick = () => localStorage.clear();
+    }
+
+    //Add an option to toggle music 
+    if(musicToggle)
+    {
+        musicToggle.checked = true;
+        musicToggle.onchange = () => {
+            musicEnabled = musicToggle.checked;
+            if(!musicEnabled)
+            {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }
+            else 
+            {
+                backgroundMusic.play();
+                backgroundMusic.loop = true;
+            }
+        };
+    }
+
+    if(volumeSlide)
+    {
+        volumeSlide.onchange = () => backgroundMusic.volume = volumeSlide.value/100;
+        //console.log(backgroundMusic.volume)
+    }
+}
