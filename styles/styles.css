@@ -1,7 +1,6 @@
 body {
     /* font-family: 'Raleway', sans-serif; */
     font-family: 'Press Start 2P', cursive;
-
 }
 
 #game{
@@ -14,5 +13,9 @@ body {
 #instructions, #stats{
     padding: 10px;
     border: 5px solid black;
+}
+
+main {
+    font-family: 'Raleway', sans-serif;
 }
 
