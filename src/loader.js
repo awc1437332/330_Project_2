@@ -2,6 +2,7 @@ import { init } from './main.js';
 import { loadImages } from './helpers.js';
 import "./My-header.js";
 import "./My-footer.js";
+import "./My-instructions.js";
 
 const imageSources = {
 	//evil1: 'images/Dr-evil.jpg',
