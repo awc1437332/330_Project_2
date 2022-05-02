@@ -19,7 +19,7 @@ template.innerHTML = `
         <div class="navbar-brand">
             <h1 id="title">Jello Jump!</h1>
             <a class="navbar-item" href="about.html">
-                <i class="fab fa-d-and-d fa-2x">
+                <i class="fabrands fa-bilibili">
             </i></a>
             <a class="navbar-burger" id="burger">
                 <span></span>
