@@ -13,7 +13,7 @@ footer {
 }
 </style>
 <footer class="footer py-4">
-    &copy Andrew Carbonari 2022 & Louis D'Angelo
+    &copy Andrew Carbonari & Louis D'Angelo 2022
 </footer>
 `;
 
