@@ -14,6 +14,20 @@ template.innerHTML = `
     }
 </style>
 
+<p id="instructions" class="content is-size-5 m-5">
+    <strong>Instructions:</strong>
+    <br>
+    - Beat the levels as fast as you can while collecting pickups!
+    <br>
+    - <strong>HINT:</strong> beat the game in under a minute while collecting at least 10 crowns for a special reward!
+    <br><br>
+    <strong>Controls:</strong>
+    <br>
+    - 'Enter' to begin the game
+    <br> 
+    - W to jump, A and D to move
+</p>
+
 `;
 
 class MyInstructions extends HTMLElement {
