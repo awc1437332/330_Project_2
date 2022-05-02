@@ -3,9 +3,15 @@ import ImageSprite from './ImageSprite.js';
 import { getRandomUnitVector } from './utilities.js';
 
 const canvas = document.querySelector("canvas");
-const ctx = canvas.getContext("2d");
-const screenWidth = canvas.width;
-const screenHeight = canvas.height;
+let ctx;
+let screenWidth;
+let screenHeight
+if(canvas) {
+    ctx = canvas.getContext("2d");
+    screenWidth = canvas.width;
+    screenHeight = canvas.height;
+}
+ 
 
 const text = document.querySelector("#flavor-text");
 const stats = document.querySelector("#player-stats");
@@ -19,6 +25,7 @@ let currentLevel = 1;
 let stillLooping = false;
 
 let musicEnabled = true;
+
 
 //Player Data
 let playerImage;

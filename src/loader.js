@@ -1,5 +1,7 @@
 import { init } from './main.js';
 import { loadImages } from './helpers.js';
+import "./My-header.js";
+import "./My-footer.js";
 
 const imageSources = {
 	//evil1: 'images/Dr-evil.jpg',
@@ -23,8 +25,9 @@ const imageSources = {
 };
 
 // loadImages(imageSourcesObject,callback);
-loadImages(imageSources, startGame);
-
+if(document.querySelector("canvas")){
+	loadImages(imageSources, startGame);	
+}
 
 function startGame(imageData) {
 	init(imageData);
