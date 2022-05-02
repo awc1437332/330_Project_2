@@ -14,14 +14,11 @@ let currentLevel = 1;
 //#region Variables
 let stillLooping = false;
 
-
 //Player Data
 let playerImage;
 let unlockableImage;
 let currentPlayerAnimation;
 let currentAnimationFrame = 0;
-
-
 
 let playerSprite; //the sprite object
 let basePlayerSprite;
@@ -43,6 +40,10 @@ let crowns = [];
 let doorObj;
 
 let FrameCounter = 0;
+let frameCounter = 0;
+let sCounter = 0;
+let minCounter = 0;
+let hCounter = 0;
 
 let titleImage;
 let backgroundImg;
@@ -50,6 +51,8 @@ let levelImgs;
 let currentLevelImage;
 let crownImg;
 let doorImg;
+
+let crownSkinUnlocked = false;
 
 //JSON Level Data and Local Storage Data
 let JSONData;
@@ -118,6 +121,12 @@ const playerLand = [
 //level data
 let baseLevelImage;
 
+//Music
+let backgroundMusic;
+let bounceSFX;
+let pickupSFX;
+let nextLevelSFX;
+
 //Event Handlers (single keypress) - listen for input and set bool
 //Handles both WASD and Arrow Keys
 let leftInputPressed = false;
@@ -167,13 +176,27 @@ function init(imgData)
     {
         localData = 
         {
+            skinUnlocked:false,
             numCrowns:0,
-            bestTime:0
+            bestTime: //Set default best time to a whole hour
+            {
+                frames:0,
+                seconds:0,
+                minutes:0,
+                hours:1
+            }
         }
         localStorage.setItem(playerKey, JSON.stringify(localData));
         //JSON.parse(localData);
     }
 
+    //add background music
+    backgroundMusic = new Audio("./media/platformerMusic.wav");
+    bounceSFX = new Audio("./media/bounce.wav");
+    pickupSFX = new Audio("./media/pickup.ogg");
+    nextLevelSFX = new Audio("./media/nextLevel.wav");
+
+    //#region IMG Data
     //initialize variables using image data
     playerImage = imgData.player; //player spritesheet should be the first image loaded
     unlockableImage = imgData.kingPlayer;
@@ -198,6 +221,7 @@ function init(imgData)
 
     crownImg = imgData.crown;
     doorImg = imgData.door;
+    //#endregion
 
     //Player animation
     currentPlayerAnimation = playerFall;
@@ -214,17 +238,33 @@ function init(imgData)
     //Draw Main Menu
     ctx.drawImage(titleImage, 0, 0);
 
-    document.addEventListener('keypress', function(event) {
+    document.onkeypress = (event) => 
+    {
         switch(event.key){
             case 'Enter':
                 setupGame();
                 loop();
                 break;
         }
-    });
+    }
 
+    //document.addEventListener('keypress', function(event) {
+    //    switch(event.key){
+    //        case 'Enter':
+    //            setupGame();
+    //            loop();
+    //            break;
+    //    }
+    //});
+
+    //Setup UI
     if(stats){
-        stats.innerHTML = `Best time: _ | Total Crowns Collected: ${localData.numCrowns}`;
+        stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
+        //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
+    }
+
+    if(text){
+        text.innerHTML = `Welcome to the game! Press the 'Enter' Key to begin!`
     }
 }
 
@@ -240,6 +280,8 @@ function loop()
     //Start loop
     requestAnimationFrame(loop);
 
+    //setTimeout(loop, 25);
+
     //Draw the objects in the level
     drawLevel();
     updatePlayer();
@@ -250,6 +292,7 @@ function loop()
         FrameCounter = 0;
     }
     FrameCounter++;
+    
 
     //Check if the player is colliding with a crown pickup
     if(crowns.length > 0) //preliminary check to see if there are items in the crowns array
@@ -258,11 +301,14 @@ function loop()
         {
             if(Collision.collides(playerObj, crowns[i]))
             {
-                //crownsCollected++;
                 //Adjust local data
-                localData.numCrowns++;
+                crownsCollected++; //number of crowns for this game
+
+                localData.numCrowns++; //number of crowns collected total
                 localStorage.setItem(playerKey, JSON.stringify(localData));
-                stats.innerHTML = `Best time: _ | Total Crowns Collected: ${localData.numCrowns}`;
+
+                pickupSFX.play();
+                //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
                 Composite.remove(engine.world, crowns[i]);
                 crowns.splice(i, 1);
                 i--;
@@ -272,6 +318,7 @@ function loop()
 
     if(Collision.collides(playerObj, doorObj)){
         //only move to next level if there is a next level to move to
+        nextLevelSFX.play();
         if (currentLevel < 10){
             currentLevel++;
             setupLevel(currentLevel);
@@ -281,8 +328,30 @@ function loop()
         }
     }
 
+    //Timer
+    frameCounter++;
+    if(frameCounter >= 60) //60Frames/1second
+    {
+        sCounter++;
+        frameCounter = 0;
+    }
+
+    if(sCounter >= 60) //60s/1min
+    {
+        minCounter++;
+        sCounter = 0;
+    }
+
+    if(minCounter >= 60)//60mins/1hr (there is no way it takes anyone *this* long to beat all 10 levels)
+    {
+        hCounter++;
+        minCounter = 0;        
+    }
+    stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
+    text.innerHTML = `Level ${currentLevel}: ${JSONData.levels[currentLevel - 1].title} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
+
     //For debug purposes
-    Render.lookAt(render, playerObj, {x:100, y:150});
+    //Render.lookAt(render, playerObj, {x:100, y:150});
 }
 
 //Helper Functions
@@ -302,13 +371,13 @@ function initPhysics(playerCenter)
     // create an engine
     engine = Engine.create();
 
-    if(!render) //make sure only one renderer is ever on screen
-    {
-        render = Render.create({
-            element: document.body,
-            engine: engine
-        });
-    }
+    //if(!render) //make sure only one renderer is ever on screen
+    //{
+    //    render = Render.create({
+    //        element: document.body,
+    //        engine: engine
+    //    });
+    //}
 
     // create two boxes and a ground
     playerObj = Bodies.rectangle(playerCenter.x, playerCenter.y, 16, 16);
@@ -328,7 +397,7 @@ function initPhysics(playerCenter)
     Composite.add(engine.world, [playerObj]);
 
     // run the renderer
-    Render.run(render);
+    //Render.run(render);
     
     // create runner
     let runner = Runner.create();
@@ -343,8 +412,11 @@ function setupGame()
     stillLooping = true;
     //initPhysics(playerCenter);
 
+    backgroundMusic.play();
+    backgroundMusic.loop = true;
+
     //Set initial player sprite
-    if(localData.numCrowns > 14)
+    if(crownSkinUnlocked)
     {
         playerSprite = altPlayerSprite;
     }
@@ -353,8 +425,11 @@ function setupGame()
         playerSprite = basePlayerSprite;
     }
 
-    //Add Event Listeners
-    document.addEventListener('keypress', function(event) {
+    //remove original keypress eventlistener
+    document.onkeypress = null;
+
+    document.onkeypress = (event) => 
+    {
         switch(event.key){
             case 'a':
             case "ArrowLeft":
@@ -369,12 +444,35 @@ function setupGame()
             case 'w': //W is the only key that doesnt require constant key press
             case "ArrowUp":
                 topInputPressed = true;
-                Body.setVelocity(playerObj, {x:playerObj.velocity.x, y:-10})
+                Body.setVelocity(playerObj, {x:playerObj.velocity.x, y:-10});
+                bounceSFX.play();
                 break;
         }
-    });
+    }
+
+    //Add Event Listeners
+    /*document.addEventListener('keypress', function(event) {
+        switch(event.key){
+            case 'a':
+            case "ArrowLeft":
+                leftInputPressed = true;
+                break;
     
-    document.addEventListener('keyup', function(event) {
+            case 'd':
+            case "ArrowRight":
+                rightInputPressed = true;
+                break;
+    
+            case 'w': //W is the only key that doesnt require constant key press
+            case "ArrowUp":
+                topInputPressed = true;
+                Body.setVelocity(playerObj, {x:playerObj.velocity.x, y:-10});
+                bounceSFX.play();
+                break;
+        }
+    });*/
+    
+    /*document.addEventListener('keyup', function(event) {
         switch(event.key){
             case 'a':
             case "ArrowLeft":
@@ -391,7 +489,27 @@ function setupGame()
                 topInputPressed = false;
                 break;
         }
-    });
+    });*/
+
+    document.onkeyup = (event) => 
+    {
+        switch(event.key){
+            case 'a':
+            case "ArrowLeft":
+                leftInputPressed = false;
+                break;
+    
+            case 'd':
+            case "ArrowRight":
+                rightInputPressed = false;
+                break;
+    
+            case 'w': //W is the only key that doesnt require constant key press
+            case "ArrowUp":
+                topInputPressed = false;
+                break;
+        }
+    }
 
     setupLevel(currentLevel);
 }
@@ -501,7 +619,7 @@ function addBoxCollider(x, y, width, height)
     //add to physics renderer
     Composite.add(engine.world, [newBox]);
 
-    console.log(newBox);
+    //console.log(newBox);
 }
 
 function addCrown(x, y)
@@ -580,12 +698,12 @@ function drawLevel()
     ctx.drawImage(backgroundImg, 0, 0);
     
     //environment (for debugging purposes only)
-    ctx.fillStyle = "black";
+    /*ctx.fillStyle = "black";
     for (let i = 0; i < boxColliders.length; i++)
     {
         //x, y, width, height
         ctx.fillRect(boxColliders[i].vertices[0].x, boxColliders[i].vertices[0].y, boxColliders[i].vertices[1].x - boxColliders[i].vertices[0].x, boxColliders[i].vertices[2].y - boxColliders[i].vertices[0].y);
-    }
+    }*/
 
     //Draw BaseLevel
     //ctx.drawImage(baseLevelImage, 0, 0);
@@ -604,15 +722,71 @@ function drawLevel()
 }
 //#endregion
 
-
+//Resets game to main menu
 function returnToMainMenu()
 {
+    //Update best time if necessary
+    updateBestTime();
+
+    //Check to see if the player has done the special objective
+    if(getTotalTime(frameCounter, sCounter, minCounter, hCounter) < 3600 && crownsCollected >= 10)
+    {
+        crownSkinUnlocked = true;
+        localData.skinUnlocked = crownSkinUnlocked;
+        localStorage.setItem(playerKey, JSON.stringify(localData));
+    }
+
+    hCounter = 0;
+    minCounter = 0;
+    sCounter = 0;
+    frameCounter = 0;
+
+    document.onkeypress = null;
+    document.onkeypress = (event) => 
+    {
+        switch(event.key){
+            case 'Enter':
+                setupGame();
+                loop();
+                break;
+        }
+    }
+
     cancelAnimationFrame(loop);
     currentLevel = 1;
     stillLooping = false;
 
     ctx.drawImage(titleImage, 0, 0);
-    text.innerHTML = `Congratulations! Your time was _. Press 'Enter' to play again!`;
-
+    stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Time: ${hCounter}:${minCounter}:${sCounter}:${frameCounter}`;
+    //stats.innerHTML = `Best time: ${localData.bestTime.hours}:${localData.bestTime.minutes}:${localData.bestTime.seconds}:${localData.bestTime.frames} | Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}`;
+    text.innerHTML = `Crowns collected: ${crownsCollected} | Total Crowns Collected: ${localData.numCrowns}\n`;
+    text.innerHTML += `Congratulations! Your time was ${hCounter}:${minCounter}:${sCounter}:${frameCounter}. Press 'Enter' to play again!`;
 }
+
+function updateBestTime()
+{
+    let currentBest = getTotalTime(localData.bestTime.frames, localData.bestTime.seconds, localData.bestTime.minutes, localData.bestTime.hours);
+    let currentRun = getTotalTime(frameCounter, sCounter, minCounter, hCounter);
+
+    //only update the current best if the current run beats it
+    if(currentRun < currentBest)
+    {
+        localData.bestTime.frames = frameCounter;
+        localData.bestTime.seconds = sCounter;
+        localData.bestTime.minutes = minCounter;
+        localData.bestTime.hours = hCounter;
+
+        localStorage.setItem(playerKey, JSON.stringify(localData));
+    }
+}
+
+//returns total amount of frames
+function getTotalTime(frames, seconds, minutes, hours)
+{
+    //1hr = 3600s * 60 = 216,000frames
+    //1min = 60s * 60 = 3600frames
+    //1s = 60frames
+    return frames + (seconds * 60) + (minutes * 3600) + (hours * 216000);
+}
+
 //#endregion
